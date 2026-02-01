@@ -1,13 +1,17 @@
 import { extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 
-const extensionName = "CT-SeparateChatInput";
+const extensionName = "CT-SidebarButtons";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 // Default Settings
 const defaultSettings = {
   buttonOrder: {}, // Map of elementID -> order (number)
-  topBarHidden: false,
+  position: 'right', // right or left
+  verticalAlignment: 'bottom', // top, center, or bottom - default to bottom
+  buttonSize: 20, // Size of buttons in pixels - much smaller for additional buttons
+  spacing: 1, // Spacing between buttons in pixels - very tight
+  opacity: 0.5, // Default opacity - more transparent
 };
 
 // Initialize Settings
@@ -27,6 +31,328 @@ function saveSettings() {
 }
 
 /**
+ * Global API for other extensions to register their buttons
+ */
+window.CTSidebarButtons = {
+  /**
+   * Register a button to be displayed in the sidebar
+   * @param {Object} config - Button configuration
+   * @param {string} config.id - Unique identifier for the button
+   * @param {string} config.icon - FontAwesome icon class (e.g., 'fa-solid fa-cog')
+   * @param {string} config.title - Tooltip text
+   * @param {Function} config.onClick - Click handler
+   * @param {number} [config.order=50] - Display order (lower = higher)
+   * @param {string} [config.class] - Additional CSS classes
+   * @returns {HTMLElement} The created button element
+   */
+  registerButton: function(config) {
+    if (!config.id || !config.icon) {
+      console.error(`${extensionName}: Button registration requires at least id and icon`);
+      return null;
+    }
+
+    const settings = extension_settings[extensionName];
+    
+    // Check if button already exists
+    let $button = $(`#ct-sidebar-btn-${config.id}`);
+    if ($button.length > 0) {
+      // Update existing button
+      $button.attr('title', config.title || '');
+      $button.find('i').attr('class', config.icon);
+      if (config.onClick) {
+        $button.off('click').on('click', config.onClick);
+      }
+      return $button[0];
+    }
+
+    // Create new button
+    $button = $(`
+      <div id="ct-sidebar-btn-${config.id}" 
+           class="ct-sidebar-button interactable ${config.class || ''}"
+           title="${config.title || ''}"
+           tabindex="0">
+        <i class="${config.icon}"></i>
+      </div>
+    `);
+
+    // Set order
+    const order = config.order !== undefined ? config.order : 
+                   settings.buttonOrder[config.id] || 50;
+    settings.buttonOrder[config.id] = order;
+    $button.css('order', order);
+
+    // Add click handler
+    if (config.onClick) {
+      $button.on('click', config.onClick);
+    }
+
+    // Add to sidebar
+    const $container = $('#ct-sidebar-container');
+    if ($container.length > 0) {
+      $container.append($button);
+      updateSettingsUI();
+    }
+
+    return $button[0];
+  },
+
+  /**
+   * Remove a button from the sidebar
+   * @param {string} id - Button identifier
+   */
+  removeButton: function(id) {
+    $(`#ct-sidebar-btn-${id}`).remove();
+    delete extension_settings[extensionName].buttonOrder[id];
+    updateSettingsUI();
+    saveSettings();
+  },
+
+  /**
+   * Update a button's visibility
+   * @param {string} id - Button identifier
+   * @param {boolean} visible - Whether the button should be visible
+   */
+  setButtonVisible: function(id, visible) {
+    const $button = $(`#ct-sidebar-btn-${id}`);
+    if ($button.length > 0) {
+      $button.toggle(visible);
+    }
+  },
+
+  /**
+   * Update a button's enabled state
+   * @param {string} id - Button identifier
+   * @param {boolean} enabled - Whether the button should be enabled
+   */
+  setButtonEnabled: function(id, enabled) {
+    const $button = $(`#ct-sidebar-btn-${id}`);
+    if ($button.length > 0) {
+      $button.toggleClass('disabled', !enabled);
+      $button.prop('disabled', !enabled);
+    }
+  },
+
+  /**
+   * Get the sidebar container element
+   * @returns {HTMLElement|null} The sidebar container
+   */
+  getContainer: function() {
+    return $('#ct-sidebar-container')[0] || null;
+  }
+};
+
+/**
+ * Settings UI Population
+ */
+function updateSettingsUI() {
+  const $list = $('#ct-sidebar-button-list');
+  if ($list.length === 0) return;
+
+  $list.empty();
+  const settings = extension_settings[extensionName];
+  const buttonOrder = settings.buttonOrder;
+
+  // Find all buttons currently in the sidebar
+  const $buttons = $('#ct-sidebar-container').find('.ct-sidebar-button');
+
+  if ($buttons.length === 0) {
+    $list.append(
+      '<div class="text-muted">No buttons registered yet. Other extensions can register buttons using the CTSidebarButtons API.</div>'
+    );
+    return;
+  }
+
+  $buttons.each((i, el) => {
+    const $el = $(el);
+    const id = $el.attr('id').replace('ct-sidebar-btn-', '');
+    const title = $el.attr('title') || id;
+    const currentOrder = buttonOrder[id] !== undefined ? buttonOrder[id] : 50;
+
+    const $row = $(`
+      <div class="ct-sidebar-settings-row">
+        <span class="button-title" title="${id}">${title}</span>
+        <div class="button-controls">
+          <input type="number" class="text_pole order-input" data-id="${id}" value="${currentOrder}">
+          <div class="visibility-toggle ${$el.is(':visible') ? 'visible' : 'hidden'}" data-id="${id}">
+            <i class="fa-solid ${$el.is(':visible') ? 'fa-eye' : 'fa-eye-slash'}"></i>
+          </div>
+        </div>
+      </div>
+    `);
+
+    // Event listener for order change
+    $row.find('.order-input').on('change', function() {
+      const newOrder = parseInt($(this).val());
+      const btnId = $(this).data('id');
+      
+      // Update Settings
+      extension_settings[extensionName].buttonOrder[btnId] = newOrder;
+      saveSettings();
+      
+      // Apply immediately
+      $(`#ct-sidebar-btn-${btnId}`).css('order', newOrder);
+    });
+
+    // Event listener for visibility toggle
+    $row.find('.visibility-toggle').on('click', function() {
+      const btnId = $(this).data('id');
+      const $btn = $(`#ct-sidebar-btn-${btnId}`);
+      const isVisible = !$btn.is(':visible');
+      
+      CTSidebarButtons.setButtonVisible(btnId, isVisible);
+      $(this).toggleClass('visible hidden');
+      $(this).find('i').toggleClass('fa-eye fa-eye-slash');
+    });
+
+    $list.append($row);
+  });
+}
+
+/**
+ * Apply settings to the sidebar
+ */
+function applySettings() {
+  const settings = extension_settings[extensionName];
+  const $sidebar = $('#ct-sidebar-container');
+  
+  // Position
+  $sidebar.removeClass('sidebar-left sidebar-right').addClass(`sidebar-${settings.position}`);
+  
+  // Vertical alignment
+  $sidebar.removeClass('align-top align-center align-bottom').addClass(`align-${settings.verticalAlignment}`);
+  
+  // Button size and spacing
+  $sidebar.css({
+    '--button-size': `${settings.buttonSize}px`,
+    '--button-spacing': `${settings.spacing}px`,
+    '--sidebar-opacity': settings.opacity
+  });
+  
+  // Update position relative to chat
+  updateSidebarPosition();
+}
+
+/**
+ * Position the sidebar relative to the #chat element
+ */
+function updateSidebarPosition() {
+  const $chat = $('#chat');
+  const $sidebar = $('#ct-sidebar-container');
+  
+  if ($chat.length === 0 || $sidebar.length === 0) return;
+  
+  const settings = extension_settings[extensionName];
+  
+  // Detect if we're on mobile (check multiple conditions for reliability)
+  const isMobile = window.matchMedia('(max-width: 768px)').matches ||
+                   window.matchMedia('(orientation: portrait)').matches ||
+                   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Use different positioning strategies for mobile vs desktop
+  if (isMobile) {
+    // Mobile: Use viewport-based positioning for reliability
+    updateMobilePosition($sidebar, settings);
+  } else {
+    // Desktop: Use chat element relative positioning
+    updateDesktopPosition($chat, $sidebar, settings);
+  }
+}
+
+/**
+ * Position sidebar for desktop - relative to chat element
+ */
+function updateDesktopPosition($chat, $sidebar, settings) {
+  const chatRect = $chat[0].getBoundingClientRect();
+  
+  let css = {
+    position: 'fixed',
+    zIndex: 10000,
+  };
+  
+  // Horizontal positioning
+  if (settings.position === 'right') {
+    css.left = (chatRect.right - 30) + 'px';
+    css.right = 'auto';
+  } else {
+    css.left = (chatRect.left + 10) + 'px';
+    css.right = 'auto';
+  }
+  
+  // Vertical positioning
+  if (settings.verticalAlignment === 'top') {
+    css.top = (chatRect.top + 10) + 'px';
+    css.bottom = 'auto';
+    css.transform = 'none';
+  } else if (settings.verticalAlignment === 'center') {
+    css.top = (chatRect.top + chatRect.height / 2) + 'px';
+    css.bottom = 'auto';
+    css.transform = 'translateY(-50%)';
+  } else { // bottom
+    css.top = 'auto';
+    css.bottom = (window.innerHeight - chatRect.bottom + 10) + 'px';
+    css.transform = 'none';
+  }
+  
+  $sidebar.css(css);
+}
+
+/**
+ * Position sidebar for mobile - use viewport-based positioning
+ */
+function updateMobilePosition($sidebar, settings) {
+  // Ensure sidebar is visible first
+  $sidebar.show();
+  
+  let css = {
+    position: 'fixed',
+    zIndex: 10000,
+    display: 'flex', // Ensure it's displayed
+  };
+  
+  // Horizontal positioning - flush to edge on mobile like desktop
+  if (settings.position === 'right') {
+    css.right = '0px';  // No spacing on mobile
+    css.left = 'auto';
+  } else {
+    css.left = '0px';   // No spacing on mobile
+    css.right = 'auto';
+  }
+  
+  // Vertical positioning - use fixed pixels for reliability on mobile
+  // Mobile viewport can be tricky with percentages
+  if (settings.verticalAlignment === 'top') {
+    css.top = '60px'; // Account for mobile top bar
+    css.bottom = 'auto';
+    css.transform = 'none';
+  } else if (settings.verticalAlignment === 'center') {
+    // For center, calculate based on window height
+    const centerPos = Math.floor(window.innerHeight / 2);
+    css.top = centerPos + 'px';
+    css.bottom = 'auto';
+    css.transform = 'translateY(-50%)';
+  } else { // bottom - most common for mobile
+    // Position above the chat input area
+    // Check if we can find the send_form element for more accurate positioning
+    const $sendForm = $('#send_form');
+    if ($sendForm.length > 0) {
+      const sendFormRect = $sendForm[0].getBoundingClientRect();
+      // Position just above the send form with some padding
+      css.top = (sendFormRect.top - $sidebar.outerHeight() - 10) + 'px';
+      css.bottom = 'auto';
+      css.transform = 'none';
+    } else {
+      // Fallback: Use fixed distance from bottom
+      css.top = 'auto';
+      css.bottom = '100px'; // Higher up to avoid chat input
+      css.transform = 'none';
+    }
+  }
+  
+  console.log(`${extensionName}: Mobile positioning applied:`, css);
+  $sidebar.css(css);
+}
+
+/**
  * Main Logic
  */
 jQuery(async () => {
@@ -37,568 +363,168 @@ jQuery(async () => {
   const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
   $("#extensions_settings").append(settingsHtml);
 
-  // 3. Setup Layout
-  const $form = $("#send_form");
-  const $textarea = $("#send_textarea");
-
-  // Ensure Placeholder exists for Hider Button
-  if ($("#ct-sci-placeholder").length === 0) {
-    $("#nonQRFormItems").append(
-      '<div id="ct-sci-placeholder" class="interactable" title="TopBar Hider Placeholder"></div>',
-    );
-  }
-
-  if ($form.length === 0 || $textarea.length === 0) {
-    console.error(`${extensionName}: Required elements not found.`);
-    return;
-  }
-
-  console.log(`${extensionName}: Initializing layout...`);
-
-  // Apply main class
-  $form.addClass("ct-separate-chat-input");
-
-  // Create the Control Bar container
-  let $controlBar = $("#ct-sci-control-bar");
-  if ($controlBar.length === 0) {
-    $controlBar = $('<div id="ct-sci-control-bar"></div>');
-    $form.append($controlBar);
-  }
-
-  // Move Textarea to top (Prepend to form)
-  // Note: CSS handles the visual ordering, but moving it in DOM ensures width behavior is consistent
-  $form.prepend($textarea);
-
-  /**
-   * Function to identify and relocate buttons
-   */
-  const relocateButtons = () => {
-    const settings = extension_settings[extensionName];
-    const buttonOrder = settings.buttonOrder || {};
-
-    // 1. Setup Groups
-    // We create a "Right Group" to hold the Send button and its alternates (Stop, Impersonate, etc.)
-    // This ensures they stay together and push to the right as a unit.
-    let $rightGroup = $("#ct-sci-right-group");
-    if ($rightGroup.length === 0) {
-      $rightGroup = $('<div id="ct-sci-right-group"></div>');
-      $controlBar.append($rightGroup);
-    }
-
-    // 2. Identify and Move Fixed/Grouped Buttons
-    const $optionsBtn = $("#options_button");
-
-    // List of buttons that belong in the Right Group (Send area)
-    const rightGroupIds = [
-      "send_but",
-      "mes_stop",
-      "mes_impersonate",
-      "mes_continue",
-      "stscript_continue",
-      "stscript_pause",
-      "stscript_stop",
-    ];
-
-    // Move Options Button (Left)
-    if ($optionsBtn.parent().attr("id") !== "ct-sci-control-bar") {
-      $controlBar.append($optionsBtn);
-    }
-
-    // Move Right Group Buttons
-    rightGroupIds.forEach((btnId) => {
-      const $btn = $(`#${btnId}`);
-      if (
-        $btn.length > 0 &&
-        $btn.parent().attr("id") !== "ct-sci-right-group"
-      ) {
-        $rightGroup.append($btn);
-      }
-    });
-
-    // 3. Identify and Move Dynamic Buttons
-    // We look for interactable elements in the original containers or loosely attached to form
-    // Exclude the fixed buttons we just moved, and specific functional divs like nonQRFormItems if they are empty
-
-    // Common containers in default ST
-    const searchSelectors = [
-      "#leftSendForm > .interactable",
-      "#rightSendForm > .interactable",
-      "#extensionsMenuButton", // Often outside or specific
-      "#form_sheld .menu_button", // Sometimes extensions drop here
-    ];
-
-    // Helper to process a candidate button
-    const processButton = (el) => {
-      const $el = $(el);
-      const id = $el.attr("id");
-
-      // Skip invalid or already processed
-      if (!id) return;
-      if (id === "options_button") return; // Handled separately
-      if (rightGroupIds.includes(id)) return; // Handled separately
-      if (id === "send_textarea") return;
-      if ($el.parent().attr("id") === "ct-sci-control-bar") return; // Already moved
-
-      // Skip unwanted specific buttons
-      const unwantedIds = [
-        "dialogue_del_mes_ok",
-        "dialogue_del_mes_cancel",
-        "file_form_reset",
-      ];
-      if (unwantedIds.includes(id)) return;
-
-      // Skip hidden functional elements that shouldn't be buttons (like file inputs)
-      if ($el.is('input[type="file"]')) return;
-
-      // Determine Order
-      let order = 50; // Default middle
-      if (Object.hasOwn(buttonOrder, id)) {
-        order = buttonOrder[id];
-      } else {
-        // Assign a new default order if new
-        buttonOrder[id] = 50;
-        settings.buttonOrder = buttonOrder; // Update ref just in case
-        // We don't save immediately to avoid spam, wait for user interaction or save periodically?
-        // Actually, let's not save "discovered" buttons automatically to settings unless user modifies them,
-        // but we use the temp value.
-      }
-
-      // Move to control bar
-      $controlBar.append($el);
-
-      // Set Order (using flex order css)
-      $el.css("order", order);
-      $el.addClass("ct-sci-dynamic-button");
-    };
-
-    // Scan selectors
-    searchSelectors.forEach((sel) => {
-      $(sel).each((i, el) => processButton(el));
-    });
-
-    // Scan for loose buttons in nonQRFormItems that might have been missed
-    $("#nonQRFormItems")
-      .find(".interactable")
-      .each((i, el) => processButton(el));
-
-    // Re-apply styles/orders for fixed buttons
-    $optionsBtn.css("order", -9999); // Always Left
-    $rightGroup.css("order", 9999); // Always Right
-    $optionsBtn.addClass("ct-sci-fixed-button");
-    $rightGroup.addClass("ct-sci-right-group");
-
-    // Update Settings UI List
-    updateSettingsUI();
-  };
-
-  /**
-   * Settings UI Population
-   */
-  const updateSettingsUI = () => {
-    const $list = $("#ct-sci-button-list");
-    if ($list.length === 0) return;
-
-    $list.empty();
-    const settings = extension_settings[extensionName];
-    const buttonOrder = settings.buttonOrder;
-
-    // Find all buttons currently in the bar to list them (excluding fixed groups)
-    const $buttons = $controlBar
-      .children()
-      .not("#options_button, #ct-sci-right-group");
-
-    if ($buttons.length === 0) {
-      $list.append(
-        '<div class="text-muted">No custom buttons detected yet.</div>',
-      );
-      return;
-    }
-
-    $buttons.each((i, el) => {
-      const id = $(el).attr("id");
-      const title = $(el).attr("title") || id;
-      const currentOrder = buttonOrder[id] !== undefined ? buttonOrder[id] : 50;
-
-      const $row = $(`
-                <div class="ct-sci-settings-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; padding: 5px; border: 1px solid var(--SmartThemeBorderColor); border-radius: 5px;">
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;" title="${id}">${title}</span>
-                    <input type="number" class="text_pole" data-id="${id}" value="${currentOrder}" style="width: 60px; text-align: center;">
-                </div>
-            `);
-
-      // Event listener for order change
-      $row.find("input").on("change", function () {
-        const newOrder = parseInt($(this).val());
-        const btnId = $(this).data("id");
-
-        // Update Settings
-        extension_settings[extensionName].buttonOrder[btnId] = newOrder;
-        saveSettings();
-
-        // Apply immediately
-        $(`#${btnId}`).css("order", newOrder);
-      });
-
-      $list.append($row);
-    });
-  };
-
-  // Run relocation logic
-  relocateButtons();
-
-  // --- Top Bar Hider Logic ---
-
-  /**
-   * Toggles a CSS class on the body to show/hide the top bar.
-   * @param {boolean} hidden - The desired hidden state.
-   */
-  function setHiddenState(hidden) {
-    if (hidden) {
-      $("body").addClass("st-top-bar-hidden");
-    } else {
-      $("body").removeClass("st-top-bar-hidden");
-    }
-  }
-
-  // Create the button and add it to the page.
-  // The ID 'topBarHiderButton' is kept for CSS styling consistency.
-  let $toggleButton = $("#topBarHiderButton");
-  if ($toggleButton.length === 0) {
-    $toggleButton = $('<button id="topBarHiderButton"></button>');
-    $("body").append($toggleButton);
-  }
-
-  /**
-   * Updates the button's icon and title based on the current state.
-   */
-  function updateButtonUI() {
-    const hidden = extension_settings[extensionName].topBarHidden;
-    if (hidden) {
-      $toggleButton.text("Show");
-      $toggleButton.attr("title", "Show Top Bar");
-      $toggleButton.html('<i class="fa-solid fa-eye"></i>'); // Use FontAwesome icon
-    } else {
-      $toggleButton.text("Hide");
-      $toggleButton.attr("title", "Hide Top Bar");
-      $toggleButton.html('<i class="fa-solid fa-eye-slash"></i>');
-    }
-  }
+  // 3. Create Sidebar Container
+  console.log(`${extensionName}: Initializing sidebar...`);
   
-  /**
-   * Checks if the placeholder element is visible in the viewport
-   * @returns {boolean} True if placeholder is visible
-   */
-  function isPlaceholderVisible() {
-    const $placeholder = $("#ct-sci-placeholder");
-    if ($placeholder.length === 0) return false;
-    
-    const rect = $placeholder[0].getBoundingClientRect();
-    const viewportHeight = window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight;
-    const viewportWidth = window.visualViewport
-      ? window.visualViewport.width
-      : window.innerWidth;
-    
-    // Check if element is within viewport bounds
-    return rect.top < viewportHeight &&
-           rect.bottom > 0 &&
-           rect.left < viewportWidth &&
-           rect.right > 0;
+  let $sidebar = $('#ct-sidebar-container');
+  if ($sidebar.length === 0) {
+    $sidebar = $('<div id="ct-sidebar-container"></div>');
+    // Append to body, but position it relative to #chat
+    $('body').append($sidebar);
   }
 
-  /**
-   * Updates the position of the TopBar Hider button to align with the placeholder.
-   * This binds the external fixed button to the internal placeholder's position.
-   * Enhanced to handle virtual keyboard on mobile devices.
-   */
-  let lastDocHeight = 0;
-  let lastViewportHeight = 0;
+  // Apply initial settings and force position update
+  applySettings();
   
-  function updateToggleButtonPosition() {
-    const $placeholder = $("#ct-sci-placeholder");
-    if ($placeholder.length === 0 || $toggleButton.length === 0) return;
-    
-    // Check for document/viewport height changes (indicates keyboard state change)
-    const currentDocHeight = document.documentElement.scrollHeight;
-    const currentViewportHeight = window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight;
-      
-    if (currentDocHeight !== lastDocHeight || currentViewportHeight !== lastViewportHeight) {
-      lastDocHeight = currentDocHeight;
-      lastViewportHeight = currentViewportHeight;
-      
-      // Schedule additional updates when dimensions change
-      schedulePositionUpdate(100);
-      schedulePositionUpdate(300);
-    }
-    
-    // Hide button if placeholder is not visible
-    if (!isPlaceholderVisible()) {
-      $toggleButton.css("display", "none");
-      return;
-    } else {
-      $toggleButton.css("display", "flex");
-    }
-
-    const placeholderRect = $placeholder[0].getBoundingClientRect();
-    
-    // Use visualViewport if available (mobile devices with virtual keyboard)
-    // This provides accurate positioning when the keyboard is open
-    let offsetX = 0;
-    let offsetY = 0;
-    
-    if (window.visualViewport) {
-      // Visual viewport offsets help track the actual visible area
-      // when virtual keyboard or other overlays are present
-      offsetX = window.visualViewport.offsetLeft || 0;
-      offsetY = window.visualViewport.offsetTop || 0;
-    }
-
-    // Calculate position relative to the actual viewport
-    const leftPosition = placeholderRect.left + offsetX + placeholderRect.width / 2;
-    const topPosition = placeholderRect.top + offsetY + placeholderRect.height / 2;
-    
-    // Ensure the button stays within viewport bounds
-    const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    
-    // Clamp position to viewport bounds with some padding
-    const clampedLeft = Math.min(Math.max(leftPosition, 25), viewportWidth - 25);
-    const clampedTop = Math.min(Math.max(topPosition, 25), viewportHeight - 25);
-
-    // Position the toggle button to overlap exactly with the placeholder
-    $toggleButton.css({
-      left: clampedLeft + "px",
-      top: clampedTop + "px",
-      bottom: "auto", // Override the default bottom positioning
-      transform: "translate(-50%, -50%)", // Center on the calculated point
-    });
-  }
-
-  // --- Click Handler ---
-  // A simple click now toggles the top bar's visibility.
-  $toggleButton.off("click").on("click", function () {
-    const currentHidden = extension_settings[extensionName].topBarHidden;
-    const newHidden = !currentHidden;
-
-    extension_settings[extensionName].topBarHidden = newHidden;
-    setHiddenState(newHidden);
-    updateButtonUI();
-    // State is not saved to ensure it resets on reload
+  // Force initial position update with delay to ensure DOM is ready
+  setTimeout(() => {
+    updateSidebarPosition();
+    console.log(`${extensionName}: Initial position update complete`);
+  }, 500);
+  
+  // Update position when window is resized or orientation changes
+  $(window).on('resize orientationchange', () => {
+    setTimeout(() => updateSidebarPosition(), 100);
   });
-
-  // --- Initial Setup for Top Bar Hider ---
-  // Always start unhidden on reload
-  extension_settings[extensionName].topBarHidden = false;
-  setHiddenState(false);
-  updateButtonUI();
-
-  // Debounced position update to avoid excessive calls during rapid changes
-  let positionUpdateTimer = null;
-  let inputFocusChecker = null;
   
-  function schedulePositionUpdate(delay = 50) {
-    if (positionUpdateTimer) {
-      clearTimeout(positionUpdateTimer);
-    }
-    positionUpdateTimer = setTimeout(() => {
-      positionUpdateTimer = null;
-      updateToggleButtonPosition();
-    }, delay);
+  // Use ResizeObserver to watch chat element changes
+  const $chat = $('#chat');
+  if ($chat.length > 0 && window.ResizeObserver) {
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(() => updateSidebarPosition());
+    });
+    resizeObserver.observe($chat[0]);
   }
   
-  // Periodic checker when input is focused (for stubborn keyboard issues)
-  function startInputFocusChecker() {
-    stopInputFocusChecker();
-    inputFocusChecker = setInterval(() => {
-      // Check if any input is still focused
-      if ($(document.activeElement).is("input, textarea")) {
-        updateToggleButtonPosition();
-      } else {
-        // No input focused, stop checking
-        stopInputFocusChecker();
-      }
-    }, 500); // Check every 500ms
-  }
-  
-  function stopInputFocusChecker() {
-    if (inputFocusChecker) {
-      clearInterval(inputFocusChecker);
-      inputFocusChecker = null;
-    }
-  }
-
-  // Initial position updates with staggered delays to handle late-loading extensions
-  // This ensures the button position is correct even after other extensions finish loading
-  requestAnimationFrame(() => {
-    updateToggleButtonPosition();
-  });
-
-  // Additional delayed updates to catch late-loading buttons
-  setTimeout(() => updateToggleButtonPosition(), 100);
-  setTimeout(() => updateToggleButtonPosition(), 300);
-  setTimeout(() => updateToggleButtonPosition(), 500);
-  setTimeout(() => updateToggleButtonPosition(), 1000);
-
-  // Update position on window resize
-  $(window).on("resize", () => schedulePositionUpdate(16)); // ~60fps throttle
-
-  // Update position on scroll (in case of scrollable containers)
-  $(window).on("scroll", () => schedulePositionUpdate(16));
-  
-  // Visual Viewport API support for mobile devices with virtual keyboards
-  // This is crucial for handling virtual keyboard open/close events
+  // Monitor viewport changes (important for mobile keyboards)
   if (window.visualViewport) {
-    // Viewport resize event fires when keyboard opens/closes
-    window.visualViewport.addEventListener("resize", () => {
-      schedulePositionUpdate(16);
+    window.visualViewport.addEventListener('resize', () => {
+      requestAnimationFrame(() => updateSidebarPosition());
     });
-    
-    // Viewport scroll event fires when the user pans/zooms
-    window.visualViewport.addEventListener("scroll", () => {
-      schedulePositionUpdate(16);
+    window.visualViewport.addEventListener('scroll', () => {
+      requestAnimationFrame(() => updateSidebarPosition());
     });
   }
   
-  // Additional mobile-specific event handlers
-  // These help with various mobile scenarios including keyboard changes
+  // Also update position when chat changes
+  const { eventSource, event_types } = SillyTavern.getContext();
+  eventSource.on(event_types.CHAT_CHANGED, () => {
+    setTimeout(() => updateSidebarPosition(), 100);
+  });
   
-  // Focus/blur events on input elements can trigger keyboard show/hide
-  $(document).on("focus blur", "input, textarea", function(e) {
-    if (e.type === "focus") {
-      // Start periodic checker when input is focused
-      startInputFocusChecker();
-      
-      // Also schedule immediate updates
-      schedulePositionUpdate(50);   // Immediate update
-      schedulePositionUpdate(250);  // After keyboard animation
-      schedulePositionUpdate(500);  // Final position
-    } else if (e.type === "blur") {
-      // Stop periodic checker on blur
-      stopInputFocusChecker();
-      
-      // Force multiple updates to catch keyboard closing
-      requestAnimationFrame(() => {
-        updateToggleButtonPosition();
+  // Update when app is ready
+  eventSource.on(event_types.APP_READY, () => {
+    setTimeout(() => updateSidebarPosition(), 200);
+  });
+
+  // 4. Setup Settings UI Event Handlers
+  
+  // Position selector
+  $('#ct-sidebar-position').val(extension_settings[extensionName].position);
+  $('#ct-sidebar-position').on('change', function() {
+    extension_settings[extensionName].position = $(this).val();
+    applySettings();
+    saveSettings();
+  });
+
+  // Vertical alignment selector
+  $('#ct-sidebar-alignment').val(extension_settings[extensionName].verticalAlignment);
+  $('#ct-sidebar-alignment').on('change', function() {
+    extension_settings[extensionName].verticalAlignment = $(this).val();
+    applySettings();
+    saveSettings();
+  });
+
+  // Button size slider
+  $('#ct-sidebar-button-size').val(extension_settings[extensionName].buttonSize);
+  $('#ct-sidebar-button-size-value').text(extension_settings[extensionName].buttonSize);
+  $('#ct-sidebar-button-size').on('input', function() {
+    const size = parseInt($(this).val());
+    extension_settings[extensionName].buttonSize = size;
+    $('#ct-sidebar-button-size-value').text(size);
+    applySettings();
+    saveSettings();
+  });
+
+  // Spacing slider
+  $('#ct-sidebar-spacing').val(extension_settings[extensionName].spacing);
+  $('#ct-sidebar-spacing-value').text(extension_settings[extensionName].spacing);
+  $('#ct-sidebar-spacing').on('input', function() {
+    const spacing = parseInt($(this).val());
+    extension_settings[extensionName].spacing = spacing;
+    $('#ct-sidebar-spacing-value').text(spacing);
+    applySettings();
+    saveSettings();
+  });
+
+  // Opacity slider
+  $('#ct-sidebar-opacity').val(extension_settings[extensionName].opacity * 100);
+  $('#ct-sidebar-opacity-value').text(Math.round(extension_settings[extensionName].opacity * 100));
+  $('#ct-sidebar-opacity').on('input', function() {
+    const opacity = parseInt($(this).val()) / 100;
+    extension_settings[extensionName].opacity = opacity;
+    $('#ct-sidebar-opacity-value').text(Math.round(opacity * 100));
+    applySettings();
+    saveSettings();
+  });
+
+  // 5. Example Demo Buttons (for testing - remove in production)
+  if (window.location.search.includes('demo=true')) {
+    setTimeout(() => {
+      CTSidebarButtons.registerButton({
+        id: 'example-settings',
+        icon: 'fa-solid fa-cog',
+        title: 'Settings Example',
+        order: 10,
+        onClick: () => console.log('Settings clicked!')
       });
-      schedulePositionUpdate(100);
-      schedulePositionUpdate(300);
-      schedulePositionUpdate(500);
-      
-      // Extra aggressive update for stubborn cases
-      setTimeout(() => {
-        updateToggleButtonPosition();
-      }, 700);
-    }
-  });
-  
-  // Input event handler - fires when typing
-  $(document).on("input", "input, textarea", function() {
-    // Light update during typing
-    schedulePositionUpdate(100);
-  });
-  
-  // Click events outside inputs might indicate focus change
-  $(document).on("click touchstart", function(e) {
-    // If clicking outside of input elements, update position
-    if (!$(e.target).is("input, textarea")) {
-      schedulePositionUpdate(50);
-    }
-  });
-  
-  // Orientation change on mobile devices
-  $(window).on("orientationchange", function() {
-    // Longer delay for orientation animations
-    schedulePositionUpdate(500);
-  });
-  
-  // Touch events that might affect viewport
-  let touchMoveTimer = null;
-  $(document).on("touchmove touchend", function() {
-    // Debounce touch events to avoid excessive updates
-    if (touchMoveTimer) clearTimeout(touchMoveTimer);
-    touchMoveTimer = setTimeout(() => {
-      updateToggleButtonPosition();
-      touchMoveTimer = null;
-    }, 100);
-  });
 
-  // Use ResizeObserver to detect layout changes in the control bar
-  const resizeObserver = new ResizeObserver(() => {
-    schedulePositionUpdate();
-  });
-
-  // Observe the control bar and form for size changes
-  if ($controlBar.length > 0) {
-    resizeObserver.observe($controlBar[0]);
-  }
-  if ($form.length > 0) {
-    resizeObserver.observe($form[0]);
-  }
-
-  // Also observe the placeholder itself
-  const $placeholder = $("#ct-sci-placeholder");
-  if ($placeholder.length > 0) {
-    resizeObserver.observe($placeholder[0]);
-    
-    // Add Intersection Observer for better visibility tracking
-    if ('IntersectionObserver' in window) {
-      const intersectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            // Placeholder is visible, update position
-            updateToggleButtonPosition();
-          } else {
-            // Placeholder is not visible, hide button
-            $toggleButton.css("display", "none");
-          }
-        });
-      }, {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.1 // Trigger when at least 10% visible
+      CTSidebarButtons.registerButton({
+        id: 'example-info',
+        icon: 'fa-solid fa-info-circle',
+        title: 'Info Example',
+        order: 20,
+        onClick: () => console.log('Info clicked!')
       });
-      
-      intersectionObserver.observe($placeholder[0]);
-    }
+
+      CTSidebarButtons.registerButton({
+        id: 'example-star',
+        icon: 'fa-solid fa-star',
+        title: 'Star Example',
+        order: 30,
+        onClick: () => console.log('Star clicked!')
+      });
+    }, 1000);
   }
 
-  // Observer to handle late-loading extensions adding buttons
+  // 6. Observer to detect when buttons are added/removed by other extensions
   const observer = new MutationObserver((mutations) => {
-    let needsRelocation = false;
+    let needsUpdate = false;
     for (const mutation of mutations) {
-      if (mutation.addedNodes.length > 0) {
-        needsRelocation = true;
+      if (mutation.type === 'childList') {
+        needsUpdate = true;
         break;
       }
     }
-    if (needsRelocation) {
-      relocateButtons();
-      // Update toggle button position after relocation with slight delay
-      schedulePositionUpdate(100);
-    }
-  });
-
-  // Observe potential sources of new buttons
-  const obsConfig = { childList: true, subtree: true };
-  const nonQr = document.getElementById("nonQRFormItems");
-  if (nonQr) observer.observe(nonQr, obsConfig);
-
-  // Also observe the main form sheld just in case
-  const sheld = document.getElementById("form_sheld");
-  if (sheld) observer.observe(sheld, { childList: true }); // Shallow check for direct appends
-
-  // Observe the control bar itself for any DOM changes
-  if ($controlBar.length > 0) {
-    observer.observe($controlBar[0], { childList: true, subtree: true });
-  }
-
-  // Open listener for the settings drawer to refresh list when opened
-  $(".inline-drawer-toggle").on("click", function () {
-    if ($(this).closest(".ct-separate-chat-input-settings").length > 0) {
+    if (needsUpdate) {
       updateSettingsUI();
     }
   });
+
+  if ($sidebar.length > 0) {
+    observer.observe($sidebar[0], { childList: true });
+  }
+
+  // 7. Open listener for the settings drawer to refresh list when opened
+  $('.inline-drawer-toggle').on('click', function() {
+    if ($(this).closest('.ct-sidebar-settings').length > 0) {
+      updateSettingsUI();
+    }
+  });
+
+  // Initial UI update
+  updateSettingsUI();
+
+  console.log(`${extensionName}: Ready! Other extensions can use window.CTSidebarButtons to register buttons.`);
 });
+

@@ -1,31 +1,107 @@
-<div class="ct-separate-chat-input-settings">
+<div class="ct-sidebar-settings">
   <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
-      <b>Separate Chat Input</b>
-      <div
-        class="inline-drawer-icon fa-solid fa-circle-chevron-down down"
-      ></div>
+      <b>Sidebar Buttons</b>
+      <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
     </div>
     <div class="inline-drawer-content">
+      
+      <!-- Layout Settings -->
       <div class="settings-block">
-        <p><strong>Button Ordering</strong></p>
-        <p class="text-muted">
-          Detected buttons in the center area are listed below. Adjust the
-          "Order" value to rearrange them (Lower = Left, Higher = Right).
-          <br />
-          <small>Note: "Options" (Left) and "Send" (Right) are fixed.</small>
-        </p>
-
-        <div
-          id="ct-sci-button-list"
-          class="list-group"
-          style="margin-top: 10px; margin-bottom: 10px"
-        >
-          <!-- JS will populate this list dynamically -->
-          <div class="text-muted">No custom buttons detected yet.</div>
+        <h4>Layout Settings</h4>
+        
+        <!-- Position -->
+        <div class="settings-row">
+          <label for="ct-sidebar-position">Position:</label>
+          <select id="ct-sidebar-position" class="text_pole">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+          </select>
+        </div>
+        
+        <!-- Vertical Alignment -->
+        <div class="settings-row">
+          <label for="ct-sidebar-alignment">Vertical Alignment:</label>
+          <select id="ct-sidebar-alignment" class="text_pole">
+            <option value="top">Top</option>
+            <option value="center">Center</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </div>
+        
+        <!-- Button Size -->
+        <div class="settings-row">
+          <label for="ct-sidebar-button-size">
+            Button Size: <span id="ct-sidebar-button-size-value">20</span>px
+          </label>
+          <input type="range" id="ct-sidebar-button-size"
+                 min="12" max="48" value="20" step="2"
+                 class="slider">
+        </div>
+        
+        <!-- Spacing -->
+        <div class="settings-row">
+          <label for="ct-sidebar-spacing">
+            Spacing: <span id="ct-sidebar-spacing-value">4</span>px
+          </label>
+          <input type="range" id="ct-sidebar-spacing" 
+                 min="0" max="12" value="4" step="1"
+                 class="slider">
+        </div>
+        
+        <!-- Opacity -->
+        <div class="settings-row">
+          <label for="ct-sidebar-opacity">
+            Opacity: <span id="ct-sidebar-opacity-value">50</span>%
+          </label>
+          <input type="range" id="ct-sidebar-opacity"
+                 min="20" max="100" value="50" step="5"
+                 class="slider">
         </div>
       </div>
-      <hr class="sysHR" />
+      
+      <hr class="sysHR">
+      
+      <!-- Button Management -->
+      <div class="settings-block">
+        <h4>Registered Buttons</h4>
+        <p class="text-muted">
+          Buttons registered by other extensions appear below. Adjust the order value to rearrange them (lower = higher priority).
+        </p>
+        
+        <div id="ct-sidebar-button-list" class="list-group">
+          <!-- Dynamically populated by JavaScript -->
+          <div class="text-muted">No buttons registered yet.</div>
+        </div>
+      </div>
+      
+      <hr class="sysHR">
+      
+      <!-- API Information -->
+      <div class="settings-block">
+        <h4>Developer API</h4>
+        <p class="text-muted">
+          Other extensions can register buttons using the global <code>CTSidebarButtons</code> API:
+        </p>
+        <pre class="code-block"><code>// Register a button
+CTSidebarButtons.registerButton({
+  id: 'my-button',
+  icon: 'fa-solid fa-star',
+  title: 'My Button',
+  order: 10,
+  onClick: () => console.log('Clicked!')
+});
+
+// Remove a button
+CTSidebarButtons.removeButton('my-button');
+
+// Control visibility
+CTSidebarButtons.setButtonVisible('my-button', false);
+
+// Control enabled state
+CTSidebarButtons.setButtonEnabled('my-button', false);</code></pre>
+      </div>
+      
     </div>
   </div>
 </div>

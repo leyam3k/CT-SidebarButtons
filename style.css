@@ -1,374 +1,318 @@
 /*
-  CT-SeparateChatInput
-  Separates the chat input into a dedicated row above the control buttons.
+  CT-SidebarButtons
+  Provides a dedicated sidebar area for third-party extensions to place their buttons
 */
 
-/* --- Main Layout --- */
-
-/* Enable wrapping on the form container */
-#send_form.ct-separate-chat-input {
-  flex-wrap: wrap !important;
-  align-content: center;
-  justify-content: center;
+/* CSS Variables for dynamic styling */
+:root {
+  --ct-sidebar-button-size: 20px;
+  --ct-sidebar-button-spacing: 1px;
+  --ct-sidebar-opacity: 0.5;
+  --ct-sidebar-width: auto;
 }
 
-/* Force the textarea to take the full top row */
-#send_form.ct-separate-chat-input > #send_textarea {
-  flex-basis: 100% !important;
-  width: 100% !important;
-  max-width: 100% !important;
-
-  /* Ensure it is visually first */
-  order: -9999 !important;
-
-  /* Spacing between input and buttons */
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  margin-bottom: 5px;
-}
-
-/* --- Control Bar --- */
-
-/* The new container for all buttons */
-#ct-sci-control-bar {
+/* --- Main Sidebar Container --- */
+#ct-sidebar-container {
+  position: fixed;
   display: flex;
-  flex-basis: 100%;
-  width: 100%;
-  justify-content: flex-start; /* Align buttons from left to right */
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0px; /* Spacing between buttons */
-  position: relative;
-
-  /* Ensure it sits below textarea */
-  order: 0;
-
-  height: 35px; /* Fix for Quick Persona Overflow */
+  flex-direction: column;
+  gap: var(--ct-sidebar-button-spacing, 2px);
+  padding: 4px;
+  z-index: 1000;
+  opacity: var(--ct-sidebar-opacity, 0.6);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  
+  /* Compact minimum size */
+  min-height: 200px;
+  min-width: calc(var(--button-size, 20px) + 8px); /* button size + padding */
+  
+  /* More transparent background with less blur */
+  background: var(--SmartThemeBlurTintColor, rgba(30, 30, 30, 0.3));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 6px;
+  
+  /* Very subtle border */
+  border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.05));
+  
+  /* Minimal shadow */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Universal Square Box Button Design - Control Bar Buttons */
-#ct-sci-control-bar > .interactable:not([style*="display: none"]),
-#ct-sci-control-bar > .menu_button:not([style*="display: none"]),
-#ct-sci-control-bar > div[tabindex]:not([style*="display: none"]) {
-  /* Square box design */
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
+/* Position classes for visual reference (actual positioning done in JS) */
+#ct-sidebar-container.sidebar-right {
+  /* Positioned on the right side of chat */
+}
+
+#ct-sidebar-container.sidebar-left {
+  /* Positioned on the left side of chat */
+}
+
+#ct-sidebar-container.align-top {
+  /* Aligned to top of chat */
+}
+
+#ct-sidebar-container.align-center {
+  /* Centered vertically in chat */
+}
+
+#ct-sidebar-container.align-bottom {
+  /* Aligned to bottom of chat */
+}
+
+/* Hover state for container - only slightly more opaque */
+#ct-sidebar-container:hover {
+  opacity: calc(var(--ct-sidebar-opacity, 0.5) + 0.3);
+}
+
+/* --- Individual Button Styling --- */
+.ct-sidebar-button {
+  width: var(--button-size, 20px);
+  height: var(--button-size, 20px);
+  min-width: var(--button-size, 20px);
+  min-height: var(--button-size, 20px);
   
-  /* Box styling - INVERTED: darker normal state */
-  border: 1px solid var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.3)) !important;
-  border-radius: 4px !important;
-  background-color: var(--SmartThemeBlurTintColor, rgba(50, 50, 50, 0.9)) !important;
-  
-  /* Spacing and layout */
-  margin: 2px 1px !important;
-  padding: 0 !important;
-  position: relative;
+  /* Tiny square box design - very transparent */
+  border: 1px solid var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+  background-color: var(--SmartThemeBlurTintColor, rgba(50, 50, 50, 0.3));
   
   /* Content centering */
   display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  
-  /* Visual enhancements */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-  transition: all 0.2s ease !important;
-}
-
-/* Right Group buttons - DO NOT force display, let ST control visibility */
-#ct-sci-right-group #send_but,
-#ct-sci-right-group #mes_stop,
-#ct-sci-right-group #mes_impersonate,
-#ct-sci-right-group #mes_continue,
-#ct-sci-right-group .stscript_btn {
-  /* Square box design */
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  
-  /* Box styling - INVERTED: darker normal state */
-  border: 1px solid var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.3)) !important;
-  border-radius: 4px !important;
-  background-color: var(--SmartThemeBlurTintColor, rgba(50, 50, 50, 0.9)) !important;
-  
-  /* Spacing and layout */
-  margin: 2px 1px !important;
-  padding: 0 !important;
-  position: relative !important;
-  
-  /* Content centering using text alignment for non-flex elements */
-  text-align: center !important;
-  line-height: 32px !important;
-  
-  /* Visual enhancements */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-  transition: all 0.2s ease !important;
-}
-
-/* Ensure icons inside right group buttons are centered using absolute positioning */
-#ct-sci-right-group #send_but > i,
-#ct-sci-right-group #mes_stop > i,
-#ct-sci-right-group #mes_impersonate > i,
-#ct-sci-right-group #mes_continue > i,
-#ct-sci-right-group .stscript_btn > i {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  line-height: 1 !important;
-}
-
-/*
-   Fixed Positioning Logic
-   Options button stays on the far left (order: -9999).
-   Dynamic buttons flow left-to-right after Options.
-   Right group (Send & alternates) is pushed to far right via margin-left: auto.
-*/
-
-/* Fixed Left Button (Options) */
-#ct-sci-control-bar > #options_button.ct-sci-fixed-button {
-  order: -9999 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* Right Group (Send & Alternates) */
-#ct-sci-right-group {
-  display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin-left: auto !important; /* Pushes itself to the far right */
-  margin-right: 0 !important;
-  order: 9999 !important;
+  justify-content: center;
+  
+  /* Minimal visual enhancements */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Icon styling within buttons */
-#ct-sci-control-bar .fa-solid,
-#ct-sci-control-bar .fa-fw,
-#ct-sci-control-bar .fa-regular,
-#ct-sci-right-group .fa-solid,
-#ct-sci-right-group .fa-fw,
-#ct-sci-right-group .fa-regular {
-  font-size: 16px !important;
-  line-height: 1 !important;
-  width: auto !important;
-  height: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  background: none !important;
-  box-shadow: none !important;
+.ct-sidebar-button i {
+  font-size: calc(var(--button-size, 20px) * 0.6);
+  color: var(--SmartThemeBodyColor, rgba(255, 255, 255, 0.7));
+  line-height: 1;
+  z-index: 2;
 }
 
-/* Special styling for specific buttons */
-#extensionsMenuButton,
-#options_button,
-#send_but {
-  font-size: 16px !important;
-  cursor: pointer;
+/* Hover state */
+.ct-sidebar-button:hover {
+  background-color: var(--SmartThemeQuoteColor, rgba(158, 127, 208, 0.3));
+  border-color: var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.3));
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
 }
 
-/* Quick Persona Image Button */
-#quickPersonaImg {
-    width: 24px !important;
-    height: 24px !important;
-    border-radius: 2px !important;
-    object-fit: cover !important;
-}
-
-/* Universal hover and interaction effects */
-#ct-sci-control-bar > .interactable,
-#ct-sci-control-bar > .menu_button,
-#ct-sci-control-bar > div[tabindex],
-#ct-sci-right-group #send_but,
-#ct-sci-right-group #mes_stop[style*="display: flex"],
-#ct-sci-right-group #mes_stop[style*="display: block"],
-#ct-sci-right-group #mes_impersonate:not([style*="display: none"]),
-#ct-sci-right-group #mes_continue:not([style*="display: none"]),
-#ct-sci-right-group .stscript_btn[style*="display: flex"],
-#ct-sci-right-group .stscript_btn[style*="display: block"] {
-  cursor: pointer !important;
-  opacity: 0.85 !important;
-}
-
-/* Hover state for square box buttons - INVERTED: brighter on hover */
-#ct-sci-control-bar > .interactable:hover,
-#ct-sci-control-bar > .menu_button:hover,
-#ct-sci-control-bar > div[tabindex]:hover,
-#ct-sci-right-group #send_but:hover,
-#ct-sci-right-group #mes_stop:hover,
-#ct-sci-right-group #mes_impersonate:hover,
-#ct-sci-right-group #mes_continue:hover,
-#ct-sci-right-group .stscript_btn:hover {
-  opacity: 1 !important;
-  border-color: var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.2)) !important;
-  background-color: rgba(158, 127, 208, 0.8) !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4) !important;
-  transform: translateY(-1px) !important;
+/* Active/Pressed state */
+.ct-sidebar-button:active {
+  transform: scale(0.95);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Focus state for accessibility */
-#ct-sci-control-bar > .interactable:focus,
-#ct-sci-control-bar > .menu_button:focus,
-#ct-sci-control-bar > div[tabindex]:focus,
-#ct-sci-right-group #send_but:focus,
-#ct-sci-right-group #mes_stop:focus,
-#ct-sci-right-group #mes_impersonate:focus,
-#ct-sci-right-group #mes_continue:focus,
-#ct-sci-right-group .stscript_btn:focus {
-  outline: 2px solid var(--SmartThemeQuoteColor, rgba(100, 150, 255, 0.5)) !important;
-  outline-offset: 1px !important;
+.ct-sidebar-button:focus {
+  outline: 2px solid var(--SmartThemeQuoteColor, rgba(100, 150, 255, 0.5));
+  outline-offset: 2px;
 }
 
-/*
-   Hide script buttons by default.
-   ST normally manages their visibility via inline styles or parent-scoped CSS.
-   Since we moved them, we need to ensure they are hidden until ST explicitly shows them (via inline style).
-*/
-#ct-sci-right-group .stscript_btn {
-  display: none;
+/* Disabled state */
+.ct-sidebar-button.disabled,
+.ct-sidebar-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-/* Disabled state for buttons */
-#ct-sci-control-bar > .interactable:disabled,
-#ct-sci-control-bar > .menu_button:disabled,
-#ct-sci-control-bar > div[tabindex]:disabled,
-#ct-sci-right-group > div:disabled,
-#ct-sci-control-bar > .interactable.disabled,
-#ct-sci-control-bar > .menu_button.disabled,
-#ct-sci-control-bar > div[tabindex].disabled,
-#ct-sci-right-group > div.disabled {
-  opacity: 0.4 !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
-}
-
-/* Special cases for buttons that need to stay hidden */
-#ct-sci-control-bar > .hidden,
-#ct-sci-right-group > .hidden,
-#ct-sci-control-bar > [style*="display: none"],
-#ct-sci-right-group > [style*="display: none"],
-#ct-sci-right-group [style*="display: none"] {
-  display: none !important;
-}
-
-/* Hide the original containers if they become empty to prevent layout shifts */
-#leftSendForm:empty,
-#rightSendForm:empty,
-#nonQRFormItems:empty {
-  display: none !important;
-}
-
-/* --- Top Bar Hider --- */
-
-/* The button itself - position is dynamically set by JS to align with placeholder */
-#topBarHiderButton {
-  position: fixed;
-  /* Position properties (left, top, bottom, transform) are set dynamically by JavaScript
-     to bind with #ct-sci-placeholder position. No hardcoded values needed. */
-  width: 25px;
-  height: 25px;
-  border: none;
+/* Ripple effect on click */
+.ct-sidebar-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
   border-radius: 50%;
-  background-color: rgba(128, 128, 128, 0.5);
-  font-size: 1.1em;
-  cursor: pointer;
-  z-index: 2147483647; /* Max Z-Index to stay on top of everything */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transition:
-    opacity 0.3s,
-    background-color 0.3s,
-    box-shadow 0.3s,
-    display 0.2s;
-  /* Note: We exclude left/top from transition to avoid laggy position updates */
-  line-height: 25px;
-  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
 
+.ct-sidebar-button:active::before {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Settings Panel Styling --- */
+.ct-sidebar-settings .settings-block {
+  margin-bottom: 15px;
+}
+
+.ct-sidebar-settings .settings-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-top: 5px;
-
-  color: white;
-  backdrop-filter: blur(4px);
-  
-  /* Prevent selection and touch delays on mobile */
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: manipulation;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 10px;
 }
 
-/* Placeholder - acts as the position anchor for the floating button */
-#ct-sci-placeholder {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  display: inline-block;
-  opacity: 0;
-  pointer-events: none;
-  flex-shrink: 0;
-  /* Ensure it maintains its space even when keyboard shows */
-  position: relative;
+.ct-sidebar-settings .settings-row label {
+  flex: 1;
+  min-width: 120px;
 }
 
-#topBarHiderButton:hover {
-  opacity: 1;
-  background-color: rgba(158, 127, 208, 0.9);
+.ct-sidebar-settings .settings-row select,
+.ct-sidebar-settings .settings-row input[type="range"] {
+  flex: 1;
+  max-width: 200px;
 }
 
-/* Hiding Logic */
-body.st-top-bar-hidden {
-  --topBarBlockSize: 0px !important;
+.ct-sidebar-settings .slider {
+  width: 100%;
+  cursor: pointer;
 }
 
-body.st-top-bar-hidden #top-bar,
-body.st-top-bar-hidden #top-settings-holder > *:not(#stcd--qrDrawer) {
-  display: none !important;
+.ct-sidebar-settings .code-block {
+  background: var(--SmartThemeBlurTintColor, rgba(30, 30, 30, 0.5));
+  border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  padding: 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  overflow-x: auto;
+  white-space: pre;
 }
 
-/* Hide drawer icon when hidden */
-body.st-top-bar-hidden
-  #stcd--qrDrawer:has(#stcd--drawer)
-  .stcd--hasPoster
-  .drawer-icon::before {
-  display: none !important;
+.ct-sidebar-settings .code-block code {
+  color: var(--SmartThemeBodyColor, #ffffff);
 }
 
-/* --- Mobile-specific adjustments --- */
+/* Button list in settings */
+.ct-sidebar-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  margin-bottom: 5px;
+  border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  background: var(--SmartThemeBlurTintColor, rgba(30, 30, 30, 0.3));
+}
+
+.ct-sidebar-settings-row .button-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-sidebar-settings-row .button-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ct-sidebar-settings-row .order-input {
+  width: 60px;
+  text-align: center;
+}
+
+.ct-sidebar-settings-row .visibility-toggle {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.ct-sidebar-settings-row .visibility-toggle:hover {
+  background: var(--SmartThemeQuoteColor, rgba(100, 150, 255, 0.2));
+}
+
+.ct-sidebar-settings-row .visibility-toggle.visible i {
+  color: var(--SmartThemeQuoteColor, #64a0ff);
+}
+
+.ct-sidebar-settings-row .visibility-toggle.hidden i {
+  color: var(--SmartThemeBodyColor, #999999);
+}
+
+/* --- Responsive adjustments --- */
 @media (max-width: 768px), (orientation: portrait) {
-  /* Ensure button stays visible on mobile */
-  #topBarHiderButton {
-    /* Slightly bigger for easier touch */
-    width: 25px;
-    height: 25px;
-    font-size: 1.2em;
+  #ct-sidebar-container {
+    /* Slightly more padding on mobile for easier touch */
+    padding: 4px;
   }
   
-  /* Control bar adjustments for mobile keyboards */
-  #ct-sci-control-bar {
-    /* Ensure control bar stays visible when keyboard opens */
-    position: relative;
-    z-index: 1000;
-  }
-  
-  /* Prevent viewport shifts when keyboard opens */
-  #send_form.ct-separate-chat-input {
-    /* Keep form structure stable */
-    min-height: auto;
+  /* Slightly larger buttons on mobile for easier touch */
+  .ct-sidebar-button {
+    min-width: calc(var(--button-size, 20px) + 4px);
+    min-height: calc(var(--button-size, 20px) + 4px);
   }
 }
 
-/* Handle virtual keyboard specifically */
-@supports (height: 100vh) and (height: 100dvh) {
-  /* Use dynamic viewport height for better keyboard handling */
-  @media (max-width: 768px) {
-    #send_form.ct-separate-chat-input {
-      /* Use dynamic viewport units if supported */
-      max-height: calc(100dvh - var(--topBarBlockSize, 0px));
-    }
+/* --- Animations --- */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
+  to {
+    transform: translateX(0);
+    opacity: var(--ct-sidebar-opacity, 0.6);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: var(--ct-sidebar-opacity, 0.6);
+  }
+}
+
+/* Apply entrance animation */
+#ct-sidebar-container.sidebar-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+#ct-sidebar-container.sidebar-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+/* Container visibility - always show unless explicitly hidden */
+#ct-sidebar-container {
+  display: flex !important;
+}
+
+/* Hide only when auto-hide is enabled and empty */
+#ct-sidebar-container.auto-hide-enabled:empty {
+  display: none !important;
+}
+
+/* Ensure sidebar is a pure overlay that doesn't affect layout */
+#ct-sidebar-container {
+  pointer-events: none; /* Container doesn't block clicks */
+}
+
+#ct-sidebar-container .ct-sidebar-button {
+  pointer-events: auto; /* But buttons are clickable */
+}
+
+/* Special handling for when top bar is hidden */
+body.st-top-bar-hidden #ct-sidebar-container.align-top {
+  top: 10px;
+}
+
+/* Ensure buttons are always square */
+.ct-sidebar-button img,
+.ct-sidebar-button svg {
+  max-width: calc(var(--button-size, 28px) * 0.6);
+  max-height: calc(var(--button-size, 28px) * 0.6);
+  width: auto;
+  height: auto;
 }
