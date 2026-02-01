@@ -1,0 +1,374 @@
+/*
+  CT-SeparateChatInput
+  Separates the chat input into a dedicated row above the control buttons.
+*/
+
+/* --- Main Layout --- */
+
+/* Enable wrapping on the form container */
+#send_form.ct-separate-chat-input {
+  flex-wrap: wrap !important;
+  align-content: center;
+  justify-content: center;
+}
+
+/* Force the textarea to take the full top row */
+#send_form.ct-separate-chat-input > #send_textarea {
+  flex-basis: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+
+  /* Ensure it is visually first */
+  order: -9999 !important;
+
+  /* Spacing between input and buttons */
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 5px;
+}
+
+/* --- Control Bar --- */
+
+/* The new container for all buttons */
+#ct-sci-control-bar {
+  display: flex;
+  flex-basis: 100%;
+  width: 100%;
+  justify-content: flex-start; /* Align buttons from left to right */
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0px; /* Spacing between buttons */
+  position: relative;
+
+  /* Ensure it sits below textarea */
+  order: 0;
+
+  height: 35px; /* Fix for Quick Persona Overflow */
+}
+
+/* Universal Square Box Button Design - Control Bar Buttons */
+#ct-sci-control-bar > .interactable:not([style*="display: none"]),
+#ct-sci-control-bar > .menu_button:not([style*="display: none"]),
+#ct-sci-control-bar > div[tabindex]:not([style*="display: none"]) {
+  /* Square box design */
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  
+  /* Box styling - INVERTED: darker normal state */
+  border: 1px solid var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.3)) !important;
+  border-radius: 4px !important;
+  background-color: var(--SmartThemeBlurTintColor, rgba(50, 50, 50, 0.9)) !important;
+  
+  /* Spacing and layout */
+  margin: 2px 1px !important;
+  padding: 0 !important;
+  position: relative;
+  
+  /* Content centering */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  /* Visual enhancements */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Right Group buttons - DO NOT force display, let ST control visibility */
+#ct-sci-right-group #send_but,
+#ct-sci-right-group #mes_stop,
+#ct-sci-right-group #mes_impersonate,
+#ct-sci-right-group #mes_continue,
+#ct-sci-right-group .stscript_btn {
+  /* Square box design */
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  
+  /* Box styling - INVERTED: darker normal state */
+  border: 1px solid var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.3)) !important;
+  border-radius: 4px !important;
+  background-color: var(--SmartThemeBlurTintColor, rgba(50, 50, 50, 0.9)) !important;
+  
+  /* Spacing and layout */
+  margin: 2px 1px !important;
+  padding: 0 !important;
+  position: relative !important;
+  
+  /* Content centering using text alignment for non-flex elements */
+  text-align: center !important;
+  line-height: 32px !important;
+  
+  /* Visual enhancements */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Ensure icons inside right group buttons are centered using absolute positioning */
+#ct-sci-right-group #send_but > i,
+#ct-sci-right-group #mes_stop > i,
+#ct-sci-right-group #mes_impersonate > i,
+#ct-sci-right-group #mes_continue > i,
+#ct-sci-right-group .stscript_btn > i {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  line-height: 1 !important;
+}
+
+/*
+   Fixed Positioning Logic
+   Options button stays on the far left (order: -9999).
+   Dynamic buttons flow left-to-right after Options.
+   Right group (Send & alternates) is pushed to far right via margin-left: auto.
+*/
+
+/* Fixed Left Button (Options) */
+#ct-sci-control-bar > #options_button.ct-sci-fixed-button {
+  order: -9999 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Right Group (Send & Alternates) */
+#ct-sci-right-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto !important; /* Pushes itself to the far right */
+  margin-right: 0 !important;
+  order: 9999 !important;
+}
+
+/* Icon styling within buttons */
+#ct-sci-control-bar .fa-solid,
+#ct-sci-control-bar .fa-fw,
+#ct-sci-control-bar .fa-regular,
+#ct-sci-right-group .fa-solid,
+#ct-sci-right-group .fa-fw,
+#ct-sci-right-group .fa-regular {
+  font-size: 16px !important;
+  line-height: 1 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Special styling for specific buttons */
+#extensionsMenuButton,
+#options_button,
+#send_but {
+  font-size: 16px !important;
+  cursor: pointer;
+}
+
+/* Quick Persona Image Button */
+#quickPersonaImg {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 2px !important;
+    object-fit: cover !important;
+}
+
+/* Universal hover and interaction effects */
+#ct-sci-control-bar > .interactable,
+#ct-sci-control-bar > .menu_button,
+#ct-sci-control-bar > div[tabindex],
+#ct-sci-right-group #send_but,
+#ct-sci-right-group #mes_stop[style*="display: flex"],
+#ct-sci-right-group #mes_stop[style*="display: block"],
+#ct-sci-right-group #mes_impersonate:not([style*="display: none"]),
+#ct-sci-right-group #mes_continue:not([style*="display: none"]),
+#ct-sci-right-group .stscript_btn[style*="display: flex"],
+#ct-sci-right-group .stscript_btn[style*="display: block"] {
+  cursor: pointer !important;
+  opacity: 0.85 !important;
+}
+
+/* Hover state for square box buttons - INVERTED: brighter on hover */
+#ct-sci-control-bar > .interactable:hover,
+#ct-sci-control-bar > .menu_button:hover,
+#ct-sci-control-bar > div[tabindex]:hover,
+#ct-sci-right-group #send_but:hover,
+#ct-sci-right-group #mes_stop:hover,
+#ct-sci-right-group #mes_impersonate:hover,
+#ct-sci-right-group #mes_continue:hover,
+#ct-sci-right-group .stscript_btn:hover {
+  opacity: 1 !important;
+  border-color: var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.2)) !important;
+  background-color: rgba(158, 127, 208, 0.8) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Focus state for accessibility */
+#ct-sci-control-bar > .interactable:focus,
+#ct-sci-control-bar > .menu_button:focus,
+#ct-sci-control-bar > div[tabindex]:focus,
+#ct-sci-right-group #send_but:focus,
+#ct-sci-right-group #mes_stop:focus,
+#ct-sci-right-group #mes_impersonate:focus,
+#ct-sci-right-group #mes_continue:focus,
+#ct-sci-right-group .stscript_btn:focus {
+  outline: 2px solid var(--SmartThemeQuoteColor, rgba(100, 150, 255, 0.5)) !important;
+  outline-offset: 1px !important;
+}
+
+/*
+   Hide script buttons by default.
+   ST normally manages their visibility via inline styles or parent-scoped CSS.
+   Since we moved them, we need to ensure they are hidden until ST explicitly shows them (via inline style).
+*/
+#ct-sci-right-group .stscript_btn {
+  display: none;
+}
+
+/* Disabled state for buttons */
+#ct-sci-control-bar > .interactable:disabled,
+#ct-sci-control-bar > .menu_button:disabled,
+#ct-sci-control-bar > div[tabindex]:disabled,
+#ct-sci-right-group > div:disabled,
+#ct-sci-control-bar > .interactable.disabled,
+#ct-sci-control-bar > .menu_button.disabled,
+#ct-sci-control-bar > div[tabindex].disabled,
+#ct-sci-right-group > div.disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Special cases for buttons that need to stay hidden */
+#ct-sci-control-bar > .hidden,
+#ct-sci-right-group > .hidden,
+#ct-sci-control-bar > [style*="display: none"],
+#ct-sci-right-group > [style*="display: none"],
+#ct-sci-right-group [style*="display: none"] {
+  display: none !important;
+}
+
+/* Hide the original containers if they become empty to prevent layout shifts */
+#leftSendForm:empty,
+#rightSendForm:empty,
+#nonQRFormItems:empty {
+  display: none !important;
+}
+
+/* --- Top Bar Hider --- */
+
+/* The button itself - position is dynamically set by JS to align with placeholder */
+#topBarHiderButton {
+  position: fixed;
+  /* Position properties (left, top, bottom, transform) are set dynamically by JavaScript
+     to bind with #ct-sci-placeholder position. No hardcoded values needed. */
+  width: 25px;
+  height: 25px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(128, 128, 128, 0.5);
+  font-size: 1.1em;
+  cursor: pointer;
+  z-index: 2147483647; /* Max Z-Index to stay on top of everything */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition:
+    opacity 0.3s,
+    background-color 0.3s,
+    box-shadow 0.3s,
+    display 0.2s;
+  /* Note: We exclude left/top from transition to avoid laggy position updates */
+  line-height: 25px;
+  opacity: 0.5;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+
+  color: white;
+  backdrop-filter: blur(4px);
+  
+  /* Prevent selection and touch delays on mobile */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Placeholder - acts as the position anchor for the floating button */
+#ct-sci-placeholder {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  display: inline-block;
+  opacity: 0;
+  pointer-events: none;
+  flex-shrink: 0;
+  /* Ensure it maintains its space even when keyboard shows */
+  position: relative;
+}
+
+#topBarHiderButton:hover {
+  opacity: 1;
+  background-color: rgba(158, 127, 208, 0.9);
+}
+
+/* Hiding Logic */
+body.st-top-bar-hidden {
+  --topBarBlockSize: 0px !important;
+}
+
+body.st-top-bar-hidden #top-bar,
+body.st-top-bar-hidden #top-settings-holder > *:not(#stcd--qrDrawer) {
+  display: none !important;
+}
+
+/* Hide drawer icon when hidden */
+body.st-top-bar-hidden
+  #stcd--qrDrawer:has(#stcd--drawer)
+  .stcd--hasPoster
+  .drawer-icon::before {
+  display: none !important;
+}
+
+/* --- Mobile-specific adjustments --- */
+@media (max-width: 768px), (orientation: portrait) {
+  /* Ensure button stays visible on mobile */
+  #topBarHiderButton {
+    /* Slightly bigger for easier touch */
+    width: 25px;
+    height: 25px;
+    font-size: 1.2em;
+  }
+  
+  /* Control bar adjustments for mobile keyboards */
+  #ct-sci-control-bar {
+    /* Ensure control bar stays visible when keyboard opens */
+    position: relative;
+    z-index: 1000;
+  }
+  
+  /* Prevent viewport shifts when keyboard opens */
+  #send_form.ct-separate-chat-input {
+    /* Keep form structure stable */
+    min-height: auto;
+  }
+}
+
+/* Handle virtual keyboard specifically */
+@supports (height: 100vh) and (height: 100dvh) {
+  /* Use dynamic viewport height for better keyboard handling */
+  @media (max-width: 768px) {
+    #send_form.ct-separate-chat-input {
+      /* Use dynamic viewport units if supported */
+      max-height: calc(100dvh - var(--topBarBlockSize, 0px));
+    }
+  }
+}
