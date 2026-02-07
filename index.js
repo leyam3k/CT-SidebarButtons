@@ -266,7 +266,7 @@ function updateDesktopPosition($chat, $sidebar, settings) {
   
   let css = {
     position: 'fixed',
-    zIndex: 10000,
+    zIndex: 100,
   };
   
   // Horizontal positioning
@@ -305,7 +305,7 @@ function updateMobilePosition($sidebar, settings) {
   
   let css = {
     position: 'fixed',
-    zIndex: 10000,
+    zIndex: 100,
     display: 'flex', // Ensure it's displayed
   };
   

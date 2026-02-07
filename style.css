@@ -18,7 +18,7 @@
   flex-direction: column;
   gap: var(--ct-sidebar-button-spacing, 2px);
   padding: 4px;
-  z-index: 1000;
+  z-index: 100;
   opacity: var(--ct-sidebar-opacity, 0.6);
   transition: opacity 0.3s ease, transform 0.3s ease;
   
