@@ -73,7 +73,7 @@
   min-height: var(--button-size, 20px);
   
   /* Tiny square box design - very transparent */
-  border: 1px solid var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(176, 160, 232, 0.6);
   border-radius: 3px;
   background-color: var(--SmartThemeBlurTintColor, rgba(50, 50, 50, 0.3));
   
@@ -100,9 +100,9 @@
 
 /* Hover state */
 .ct-sidebar-button:hover {
-  background-color: var(--SmartThemeQuoteColor, rgba(158, 127, 208, 0.3));
-  border-color: var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.3));
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  background-color: rgba(176, 160, 232, 0.25);
+  border-color: rgba(176, 160, 232, 0.6);
+  box-shadow: 0 0 8px rgba(176, 160, 232, 0.6);
   transform: scale(1.05);
 }
 
@@ -114,7 +114,7 @@
 
 /* Focus state for accessibility */
 .ct-sidebar-button:focus {
-  outline: 2px solid var(--SmartThemeQuoteColor, rgba(100, 150, 255, 0.5));
+  outline: 2px solid rgba(176, 160, 232, 0.6);
   outline-offset: 2px;
 }
 
@@ -227,11 +227,11 @@
 }
 
 .ct-sidebar-settings-row .visibility-toggle:hover {
-  background: var(--SmartThemeQuoteColor, rgba(100, 150, 255, 0.2));
+  background: rgba(176, 160, 232, 0.25);
 }
 
 .ct-sidebar-settings-row .visibility-toggle.visible i {
-  color: var(--SmartThemeQuoteColor, #64a0ff);
+  color: rgba(176, 160, 232, 0.9);
 }
 
 .ct-sidebar-settings-row .visibility-toggle.hidden i {
