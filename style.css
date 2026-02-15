@@ -67,10 +67,10 @@
 
 /* --- Individual Button Styling --- */
 .ct-sidebar-button {
-  width: var(--button-size, 20px);
-  height: var(--button-size, 20px);
-  min-width: var(--button-size, 20px);
-  min-height: var(--button-size, 20px);
+  width: 20px;
+  height: 30px;
+  min-width: 20px;
+  min-height: 30px;
   
   /* Tiny square box design - very transparent */
   border: 1px solid rgba(176, 160, 232, 0.6);
